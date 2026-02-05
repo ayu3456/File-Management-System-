@@ -98,6 +98,3 @@ Exiting...
 ```
 
 
-    *   Operations like `read_file`, `write_file`, and `delete_file` first attempt to locate the specified filename in the directory structure. If the filename is not found, an error such as "File not found" is returned.
-
-These edge cases are handled by checks at the appropriate points in the file operation functions, returning informative error messages to the user and preventing invalid or potentially destructive operations.
