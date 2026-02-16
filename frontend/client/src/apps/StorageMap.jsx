@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { PieChart, HardDrive, RefreshCw } from 'lucide-react';
+import { PieChart, HardDrive, RefreshCw, Trash2 } from 'lucide-react';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -58,35 +58,66 @@ const StorageMap = () => {
     const renderBlockMap = () => {
         if (!status) return null;
 
-        const totalBlocks = status.total_blocks || 100; // Default fallback
-        const blocks = new Array(totalBlocks).fill('free');
+        const TOTAL_VISUAL_BLOCKS = 100;
+        const usedSize = status.total_size - (status.free_blocks * status.block_size);
+        const usedPercent = Math.min(100, Math.round((usedSize / status.total_size) * 100)); // Cap at 100
         
-        // Fill blocks based on files
-        // Note: This is an abstraction. Real block allocation might be fragmented.
-        // We are just showing relative usage visually.
-        let currentIndex = 0;
+        // Count blocks by type to distribute colors correctly
+        // This is an approximation based on file count ratios for simplicity in this visual
+        // In a real FS, we would map exact blocks. Here we map percentage of 100.
         
+        let fileTypeCounts = { documents: 0, images: 0, code: 0, others: 0 };
+        let totalFiles = 0;
+
         files.forEach(file => {
-            if (file.filename.startsWith('.trash_')) return; // Don't count trash for active storage visualization? Or allow it?
-            // Maybe trash should be a separate color 'red'?
-            // Let's treat trash as 'others' or 'trash' category if we want.
-            // For now, let's include trash as 'others' or specific category.
-            
-            const category = file.filename.startsWith('.trash_') ? 'others' : getFileCategory(file.filename);
-            const fileBlocks = file.blocks;
-            
-            for (let i = 0; i < fileBlocks && currentIndex < totalBlocks; i++) {
-                blocks[currentIndex] = category;
-                currentIndex++;
-            }
+             if (file.filename.startsWith('.trash_')) return; 
+             const cat = getFileCategory(file.filename);
+             if (fileTypeCounts[cat] !== undefined) fileTypeCounts[cat]++;
+             totalFiles++;
         });
 
+        const blocks = [];
+        
+        // If no files, just empty
+        if (totalFiles === 0) {
+             for(let i=0; i<TOTAL_VISUAL_BLOCKS; i++) blocks.push('free');
+        } else {
+            // Distribute the 'usedPercent' blocks among categories
+            let blocksAllocated = 0;
+            const categories = ['documents', 'images', 'code', 'others'];
+            
+            categories.forEach(cat => {
+                const count = fileTypeCounts[cat];
+                if (count > 0) {
+                    // Portion of used blocks for this category
+                    const share = (count / totalFiles);
+                    const blocksForCat = Math.round(share * usedPercent);
+                    
+                    for(let i=0; i<blocksForCat && blocksAllocated < usedPercent; i++) {
+                        blocks.push(cat);
+                        blocksAllocated++;
+                    }
+                }
+            });
+
+            // Fill remaining used blocks with 'others' if rounding errors left gaps
+            while(blocksAllocated < usedPercent) {
+                blocks.push('others');
+                blocksAllocated++;
+            }
+
+            // Fill the rest with free
+            while(blocks.length < TOTAL_VISUAL_BLOCKS) {
+                blocks.push('free');
+            }
+        }
+
         return (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(12px,1fr))] gap-1 p-4 bg-slate-900 rounded-lg border border-slate-700">
+            <div className="grid grid-cols-10 gap-1 p-4 bg-slate-900 rounded-lg border border-slate-700 w-full max-w-md mx-auto aspect-square">
                 {blocks.map((type, idx) => (
                     <div 
                         key={idx} 
-                        className={`w-3 h-3 rounded-sm ${CATEGORY_COLORS[type] || 'bg-slate-700/50'} transition-all hover:scale-125 hover:z-10`}
+                        className={`w-full h-full rounded-sm ${CATEGORY_COLORS[type] || 'bg-slate-700/50'} transition-all hover:scale-110`}
                         title={`Block ${idx}: ${type}`}
                     ></div>
                 ))}

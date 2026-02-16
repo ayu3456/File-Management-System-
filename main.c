@@ -73,14 +73,11 @@ void handle_command(int argc, char *argv[]) {
     }
     char *buffer = malloc(VIRTUAL_DISK_SIZE);
     if (buffer && read_file(argv[2], buffer, VIRTUAL_DISK_SIZE)) {
-      // Output raw content or JSON? For now, raw content is easier for the
-      // reader logic providing it doesn't conflict with JSON parsing. Let's
-      // wrap it in JSON to be consistent. Need to escape quotes/newlines in
-      // real impl, but for now simple content:
-      printf("{\"status\":\"success\",\"content\":\"%s\"}\n", buffer);
+      // Output raw content (NOT JSON) — the Node.js server will wrap it
+      printf("%s", buffer);
     } else {
-      printf(
-          "{\"status\":\"error\",\"message\":\"Failed to read or empty\"}\n");
+      // Signal error via exit code would be better, but for now use stderr
+      fprintf(stderr, "Failed to read file\n");
     }
     free(buffer);
   } else if (strcmp(argv[1], "delete") == 0) {
@@ -108,6 +105,9 @@ void handle_command(int argc, char *argv[]) {
     }
   } else if (strcmp(argv[1], "status") == 0) {
     show_disk_status_json();
+  } else if (strcmp(argv[1], "format") == 0) {
+    format_disk();
+    printf("{\"status\":\"success\",\"message\":\"Disk formatted\"}\n");
   } else {
     fprintf(stderr, "Unknown command: %s\n", argv[1]);
   }

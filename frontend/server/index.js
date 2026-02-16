@@ -7,6 +7,7 @@ const path = require('path');
 const app = express();
 const PORT = 3001;
 const VFM_PATH = path.resolve(__dirname, '../../vfm');
+const VFM_CWD = path.resolve(__dirname, '../../'); // Project root where disk.txt lives
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -14,7 +15,7 @@ app.use(bodyParser.json());
 // Helper to execute VFM commands
 const runVFM = (args) => {
     return new Promise((resolve, reject) => {
-        exec(`${VFM_PATH} ${args}`, (error, stdout, stderr) => {
+        exec(`${VFM_PATH} ${args}`, { cwd: VFM_CWD }, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error: ${error.message}`);
                 reject(stderr || error.message);
@@ -71,10 +72,17 @@ app.post('/api/files', async (req, res) => {
 app.get('/api/files/:name', async (req, res) => {
     const filename = req.params.name;
     try {
-        const result = await runVFM(`read "${filename}"`);
-        res.json(result);
+        // Use exec directly to get raw stdout (file content is not JSON)
+        exec(`${VFM_PATH} read "${filename}"`, { cwd: VFM_CWD }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Read error: ${stderr}`);
+                return res.status(500).json({ status: 'error', message: stderr || error.message });
+            }
+            // stdout contains the raw file content
+            res.json({ status: 'success', content: stdout });
+        });
     } catch (error) {
-        res.status(500).json({ error });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -125,6 +133,15 @@ app.delete('/api/files/:name', async (req, res) => {
 app.get('/api/status', async (req, res) => {
     try {
         const result = await runVFM('status');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/api/format', async (req, res) => {
+    try {
+        const result = await runVFM('format');
         res.json(result);
     } catch (error) {
         res.status(500).json({ error });

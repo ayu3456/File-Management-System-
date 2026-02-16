@@ -74,6 +74,14 @@ bool rename_file(const char *old_filename, const char *new_filename) {
   strncpy(directory[entry_index].filename, new_filename, MAX_FILENAME_LEN - 1);
   directory[entry_index].filename[MAX_FILENAME_LEN - 1] =
       '\0'; // Ensure null-termination
+
+  // Also update the filename in the File Table
+  int ft_index = directory[entry_index].file_table_index;
+  if (ft_index >= 0 && ft_index < MAX_FILES) {
+    strncpy(file_table[ft_index].filename, new_filename, MAX_FILENAME_LEN - 1);
+    file_table[ft_index].filename[MAX_FILENAME_LEN - 1] = '\0';
+  }
+
   save_file_system();
   return true;
 }
