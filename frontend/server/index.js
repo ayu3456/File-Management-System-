@@ -30,10 +30,10 @@ const runVFM = (args) => {
                 const jsonStart = stdout.indexOf('{');
                 const jsonArrayStart = stdout.indexOf('[');
                 if (jsonStart !== -1 || jsonArrayStart !== -1) {
-                     // Find the first valid JSON character
-                     const start = (jsonStart !== -1 && (jsonArrayStart === -1 || jsonStart < jsonArrayStart)) ? jsonStart : jsonArrayStart;
-                     const jsonStr = stdout.substring(start);
-                     resolve(JSON.parse(jsonStr));
+                    // Find the first valid JSON character
+                    const start = (jsonStart !== -1 && (jsonArrayStart === -1 || jsonStart < jsonArrayStart)) ? jsonStart : jsonArrayStart;
+                    const jsonStr = stdout.substring(start);
+                    resolve(JSON.parse(jsonStr));
                 } else {
                     resolve({ message: stdout.trim() });
                 }
@@ -82,7 +82,7 @@ app.put('/api/files/:name', async (req, res) => {
     const filename = req.params.name;
     const { content } = req.body;
     if (content === undefined) return res.status(400).json({ error: 'Missing content' });
-    
+
     // Escape content for CLI - this is basic and might need improvement for complex chars
     // For now, removing double quotes or handling them?
     // Using single quotes for the argument in shell might be safer, but content might have single quotes.
@@ -92,9 +92,20 @@ app.put('/api/files/:name', async (req, res) => {
     // In `runVFM` we use string template.
     // Let's escape double quotes in content:
     const escapedContent = content.replace(/"/g, '\\"');
-    
+
     try {
         const result = await runVFM(`write "${filename}" "${escapedContent}"`);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/api/files/rename', async (req, res) => {
+    const { oldName, newName } = req.body;
+    if (!oldName || !newName) return res.status(400).json({ error: 'Missing oldName or newName' });
+    try {
+        const result = await runVFM(`rename "${oldName}" "${newName}"`);
         res.json(result);
     } catch (error) {
         res.status(500).json({ error });

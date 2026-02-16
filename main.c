@@ -95,6 +95,17 @@ void handle_command(int argc, char *argv[]) {
     }
   } else if (strcmp(argv[1], "list") == 0) {
     list_files_json();
+  } else if (strcmp(argv[1], "rename") == 0) {
+    if (argc < 4) {
+      fprintf(stderr, "Usage: %s rename <old_filename> <new_filename>\n",
+              argv[0]);
+      return;
+    }
+    if (rename_file(argv[2], argv[3])) {
+      printf("{\"status\":\"success\",\"message\":\"File renamed\"}\n");
+    } else {
+      printf("{\"status\":\"error\",\"message\":\"Failed to rename file\"}\n");
+    }
   } else if (strcmp(argv[1], "status") == 0) {
     show_disk_status_json();
   } else {

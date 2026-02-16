@@ -4,6 +4,8 @@ import Taskbar from './components/Taskbar';
 import Window from './components/Window';
 import FileManager from './apps/FileManager';
 import TextEditor from './apps/TextEditor';
+import RecycleBin from './apps/RecycleBin';
+import StorageMap from './apps/StorageMap';
 import { AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -12,35 +14,42 @@ function App() {
   const [startMenuOpen, setStartMenuOpen] = useState(false);
 
   const openApp = (appId, initialProps = {}) => {
-    const existingWindow = windows.find(w => w.appId === appId && !w.multiInstance);
+    const existingWindow = windows.find(w => w.appId === appId && appId !== 'editor'); // Allow multiple editors? Maybe not for now 
     if (existingWindow) {
+      if (existingWindow.minimized) {
+        setWindows(windows.map(w => w.id === existingWindow.id ? { ...w, minimized: false } : w));
+      }
       setActiveWindowId(existingWindow.id);
-      setWindows(prev => prev.map(w => w.id === existingWindow.id ? { ...w, minimized: false } : w));
       return;
     }
 
-    const newWindow = {
-      id: Date.now(),
+    const id = Date.now();
+    const dimensions = getInitialDimensions(appId);
+    
+    let title = 'Application';
+    if (appId === 'computer') title = 'My Computer';
+    if (appId === 'editor') title = initialProps.filename ? `Text Editor - ${initialProps.filename}` : 'Text Editor';
+    if (appId === 'bin') title = 'Recycle Bin';
+    if (appId === 'storage') title = 'Storage Visualization';
+
+    setWindows([...windows, {
+      id,
       appId,
-      title: appId === 'files' ? 'File Explorer' : 'Text Editor',
+      title,
+      x: dimensions.x,
+      y: dimensions.y,
+      width: dimensions.width,
+      height: dimensions.height,
       minimized: false,
-      zIndex: windows.length + 1,
-      props: initialProps,
-      ...getInitialDimensions(appId)
-    };
-    setWindows([...windows, newWindow]);
-    setActiveWindowId(newWindow.id);
+      props: initialProps
+    }]);
+    setActiveWindowId(id);
   };
 
   const closeWindow = (id) => {
     setWindows(windows.filter(w => w.id !== id));
     if (activeWindowId === id) {
-      const remaining = windows.filter(w => w.id !== id);
-      if (remaining.length > 0) {
-        setActiveWindowId(remaining[remaining.length - 1].id);
-      } else {
-        setActiveWindowId(null);
-      }
+      setActiveWindowId(null);
     }
   };
 
@@ -51,13 +60,19 @@ function App() {
 
   const focusWindow = (id) => {
     setActiveWindowId(id);
-    setWindows(prev => prev.map(w => w.id === id ? { ...w, minimized: false, zIndex: Math.max(...prev.map(p => p.zIndex)) + 1 } : w));
+    setWindows(prev => {
+      const win = prev.find(w => w.id === id);
+      const others = prev.filter(w => w.id !== id);
+      return [...others, win];
+    });
   };
 
   const getInitialDimensions = (appId) => {
-    if (appId === 'files') return { width: 800, height: 600, x: 100, y: 50 };
-    if (appId === 'editor') return { width: 600, height: 500, x: 150, y: 80 };
-    return { width: 600, height: 400, x: 200, y: 100 };
+    if (appId === 'computer') return { x: 100, y: 50, width: 800, height: 600 };
+    if (appId === 'editor') return { x: 150, y: 100, width: 600, height: 500 };
+    if (appId === 'bin') return { x: 200, y: 150, width: 700, height: 500 };
+    if (appId === 'storage') return { x: 120, y: 80, width: 600, height: 450 };
+    return { x: 100, y: 100, width: 600, height: 400 };
   };
 
   return (
@@ -79,8 +94,10 @@ function App() {
               onMinimize={() => minimizeWindow(win.id)}
               onFocus={() => focusWindow(win.id)}
             >
-              {win.appId === 'files' && <FileManager openApp={openApp} />}
-              {win.appId === 'editor' && <TextEditor {...win.props} />}
+              {win.appId === 'computer' && <FileManager openApp={openApp} />}
+              {win.appId === 'editor' && <TextEditor filename={win.props.filename} />}
+              {win.appId === 'bin' && <RecycleBin />}
+              {win.appId === 'storage' && <StorageMap />}
             </Window>
           )
         ))}
@@ -89,7 +106,19 @@ function App() {
       <Taskbar 
         windows={windows} 
         activeWindowId={activeWindowId} 
-        onWindowClick={focusWindow}
+        onWindowClick={(id) => {
+          const win = windows.find(w => w.id === id);
+          if (win.minimized) {
+            setWindows(windows.map(w => w.id === id ? { ...w, minimized: false } : w));
+            setActiveWindowId(id);
+          } else {
+            if (activeWindowId === id) {
+              minimizeWindow(id);
+            } else {
+              focusWindow(id);
+            }
+          }
+        }}
         startMenuOpen={startMenuOpen}
         toggleStartMenu={() => setStartMenuOpen(!startMenuOpen)}
         openApp={openApp}

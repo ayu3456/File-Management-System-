@@ -31,7 +31,9 @@ const FileManager = ({ openApp }) => {
         try {
             const res = await axios.get(`${API_URL}/files`);
             if (Array.isArray(res.data)) {
-                setFiles(res.data);
+                // Filter out files in Recycle Bin
+                const activeFiles = res.data.filter(f => !f.filename.startsWith('.trash_'));
+                setFiles(activeFiles);
                 setError(null);
             } else {
                 setFiles([]);
@@ -57,12 +59,15 @@ const FileManager = ({ openApp }) => {
     };
 
     const deleteFile = async (filename) => {
-        if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+        // Soft delete: Rename to .trash_<filename>
         try {
-            await axios.delete(`${API_URL}/files/${filename}`);
+            await axios.post(`${API_URL}/files/rename`, {
+                oldName: filename,
+                newName: `.trash_${filename}`
+            });
             fetchFiles();
         } catch (err) {
-            alert('Failed to delete file');
+            alert('Failed to move file to Recycle Bin: ' + err.message);
         }
     };
 
