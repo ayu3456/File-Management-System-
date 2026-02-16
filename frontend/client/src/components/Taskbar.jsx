@@ -52,9 +52,9 @@ const StartMenu = ({ isOpen, onClose, openApp }) => {
              <div className="border-t border-white/10 pt-3 mt-auto flex justify-between items-center px-2">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
-                        US
+                        SA
                     </div>
-                    <span className="text-sm text-slate-200">User</span>
+                    <span className="text-sm text-slate-200">Sahil / Ayush - Deadlock</span>
                 </div>
                 <button className="p-2 hover:bg-white/10 rounded text-slate-400 hover:text-red-400 transition-colors">
                     <Power size={18} />

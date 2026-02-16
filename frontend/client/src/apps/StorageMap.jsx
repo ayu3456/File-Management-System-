@@ -125,6 +125,16 @@ const StorageMap = () => {
         );
     };
 
+    const flushStorage = async () => {
+        if (!window.confirm('⚠️ This will permanently delete ALL files from the virtual disk. Are you sure?')) return;
+        try {
+            await axios.post(`${API_URL}/format`);
+            fetchData();
+        } catch (err) {
+            alert('Failed to flush storage: ' + err.message);
+        }
+    };
+
     if (!status) return <div className="p-4 text-slate-400">Loading storage info...</div>;
 
     const usedSize = status.total_size - (status.free_blocks * status.block_size);
@@ -145,9 +155,18 @@ const StorageMap = () => {
                          </p>
                      </div>
                  </div>
-                 <button onClick={fetchData} className="p-2 hover:bg-slate-700 rounded-full transition-colors">
-                     <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                 </button>
+                 <div className="flex items-center gap-2">
+                     <button 
+                         onClick={flushStorage} 
+                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/80 hover:bg-red-500 rounded text-xs font-medium transition-colors"
+                         title="Flush all storage"
+                     >
+                         <Trash2 size={14} /> Flush
+                     </button>
+                     <button onClick={fetchData} className="p-2 hover:bg-slate-700 rounded-full transition-colors">
+                         <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                     </button>
+                 </div>
              </div>
 
              {/* Visualization */}
