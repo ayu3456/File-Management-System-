@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Folder, FileText, Plus, RefreshCw, Trash2, File, Grid, List, ArrowLeft, Image, Code, FileCode, Archive, UploadCloud } from 'lucide-react';
+import { Folder, FileText, Plus, RefreshCw, Trash2, File, Grid, List, ArrowLeft, Image, Code, FileCode, Archive, UploadCloud, Info, X } from 'lucide-react';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -22,6 +22,9 @@ const FileManager = ({ openApp }) => {
     // Organization State
     const [isOrganized, setIsOrganized] = useState(false);
     const [currentFolder, setCurrentFolder] = useState(null); // null = root
+
+    // Info Modal State
+    const [infoFile, setInfoFile] = useState(null);
 
     // Drag and Drop State
     const [isDragging, setIsDragging] = useState(false);
@@ -278,6 +281,13 @@ const FileManager = ({ openApp }) => {
                             {/* Quick Actions (only visible on hover) */}
                             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
                                 <button 
+                                    onClick={(e) => { e.stopPropagation(); setInfoFile(item); }}
+                                    className="p-1 bg-slate-800 hover:bg-blue-500 rounded-full shadow-sm text-slate-400 hover:text-white"
+                                    title="Info"
+                                >
+                                    <Info size={10} />
+                                </button>
+                                <button 
                                     onClick={(e) => { e.stopPropagation(); deleteFile(item.filename); }}
                                     className="p-1 bg-slate-800 hover:bg-red-500 rounded-full shadow-sm text-slate-400 hover:text-white"
                                     title="Delete"
@@ -343,6 +353,50 @@ const FileManager = ({ openApp }) => {
                             </div>
                          </div>
                     </form>
+                </div>
+            )}
+
+            {/* File Info Modal */}
+            {infoFile && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setInfoFile(null)}>
+                    <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 w-72 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-3 border-b border-slate-700 bg-slate-700/50">
+                            <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                                <Info size={14} className="text-blue-400" /> File Information
+                            </h3>
+                            <button onClick={() => setInfoFile(null)} className="p-0.5 hover:bg-white/10 rounded text-slate-400 hover:text-white">
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            <div className="flex items-center gap-3 pb-3 border-b border-slate-700/50">
+                                <div className="w-10 h-10 flex items-center justify-center text-blue-400">
+                                    <FileText size={32} strokeWidth={1.5} />
+                                </div>
+                                <p className="text-sm font-medium text-slate-200 break-all">{infoFile.filename}</p>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Size</span>
+                                    <span className="text-slate-200 font-medium">{infoFile.size} bytes</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">File Path</span>
+                                    <span className="text-slate-200 font-medium">/disk.txt/{infoFile.filename}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Type</span>
+                                    <span className="text-slate-200 font-medium capitalize">{getFileCategory(infoFile.filename)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Created</span>
+                                    <span className="text-slate-200 font-medium">
+                                        {infoFile.created ? new Date(infoFile.created * 1000).toLocaleString() : 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
