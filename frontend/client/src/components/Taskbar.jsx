@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppWindow, Monitor, Folder, FileText, Search, Power } from 'lucide-react';
+import { Monitor, Folder, FileText, Power, HardDrive } from 'lucide-react';
 
 const Clock = () => {
     const [time, setTime] = useState(new Date());
@@ -15,37 +15,38 @@ const Clock = () => {
     );
 };
 
-const StartMenu = ({ isOpen, onClose, openApp }) => {
+const StartMenu = ({ isOpen, onClose, openApp, onShutdown }) => {
     if (!isOpen) return null;
     return (
         <div className="absolute bottom-12 left-0 w-80 bg-slate-900/90 backdrop-blur-md rounded-tr-lg rounded-tl-lg border border-white/10 shadow-2xl p-4 flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-5 duration-200">
-             <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
-                <input 
-                    placeholder="Search apps..." 
-                    className="w-full bg-slate-800 text-white pl-8 pr-4 py-2 rounded-md border border-slate-700 focus:outline-none focus:border-blue-500 text-sm"
-                />
-            </div>
-            
             <div className="grid grid-cols-1 gap-1">
                 <p className="text-xs font-semibold text-slate-400 px-2 mb-1">Pinned</p>
                 <button 
-                    onClick={() => { openApp('files'); onClose(); }}
+                    onClick={() => { openApp('computer'); onClose(); }}
                     className="flex items-center gap-3 p-2 hover:bg-white/10 rounded text-slate-200 text-sm transition-colors text-left"
                 >
                     <div className="p-1.5 bg-blue-500/20 rounded">
                         <Folder size={18} className="text-blue-400" />
                     </div>
-                    File Explorer
+                    My Computer
                 </button>
                 <button 
                     onClick={() => { openApp('editor'); onClose(); }}
                     className="flex items-center gap-3 p-2 hover:bg-white/10 rounded text-slate-200 text-sm transition-colors text-left"
                 >
-                    <div className="p-1.5 bg-emerald-500/20 rounded">
-                        <FileText size={18} className="text-emerald-400" />
+                    <div className="p-1.5 bg-slate-500/20 rounded">
+                        <FileText size={18} className="text-slate-400" />
                     </div>
                     Text Editor
+                </button>
+                <button 
+                    onClick={() => { openApp('storage'); onClose(); }}
+                    className="flex items-center gap-3 p-2 hover:bg-white/10 rounded text-slate-200 text-sm transition-colors text-left"
+                >
+                    <div className="p-1.5 bg-emerald-500/20 rounded">
+                        <HardDrive size={18} className="text-emerald-400" />
+                    </div>
+                    Storage Manager
                 </button>
             </div>
 
@@ -56,7 +57,11 @@ const StartMenu = ({ isOpen, onClose, openApp }) => {
                     </div>
                     <span className="text-sm text-slate-200">Sahil / Ayush - Deadlock</span>
                 </div>
-                <button className="p-2 hover:bg-white/10 rounded text-slate-400 hover:text-red-400 transition-colors">
+                <button 
+                    onClick={() => { onClose(); onShutdown(); }}
+                    className="p-2 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400 transition-colors"
+                    title="Shutdown"
+                >
                     <Power size={18} />
                 </button>
             </div>
@@ -64,7 +69,7 @@ const StartMenu = ({ isOpen, onClose, openApp }) => {
     );
 };
 
-const Taskbar = ({ windows, activeWindowId, onWindowClick, startMenuOpen, toggleStartMenu, openApp }) => {
+const Taskbar = ({ windows, activeWindowId, onWindowClick, startMenuOpen, toggleStartMenu, openApp, onShutdown }) => {
   return (
     <div className="absolute bottom-0 w-full h-12 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-between px-2 z-50 text-white select-none">
       
@@ -76,7 +81,7 @@ const Taskbar = ({ windows, activeWindowId, onWindowClick, startMenuOpen, toggle
              <Monitor size={24} className="text-blue-400" />
          </button>
 
-         {startMenuOpen && <StartMenu isOpen={true} onClose={toggleStartMenu} openApp={openApp} />}
+         {startMenuOpen && <StartMenu isOpen={true} onClose={toggleStartMenu} openApp={openApp} onShutdown={onShutdown} />}
 
          <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
@@ -94,7 +99,7 @@ const Taskbar = ({ windows, activeWindowId, onWindowClick, startMenuOpen, toggle
                         ${win.minimized ? 'opacity-50' : ''}
                     `}
                 >
-                    {win.appId === 'files' ? <Folder size={14} className="text-blue-300" /> : <FileText size={14} className="text-emerald-300" />}
+                    {win.appId === 'computer' ? <Folder size={14} className="text-blue-300" /> : <FileText size={14} className="text-emerald-300" />}
                     <span className="truncate">{win.title}</span>
                 </button>
             ))}
@@ -102,7 +107,6 @@ const Taskbar = ({ windows, activeWindowId, onWindowClick, startMenuOpen, toggle
       </div>
 
       <div className="flex items-center gap-2 h-full">
-          {/* Status area/tray icons could go here */}
           <Clock />
       </div>
 

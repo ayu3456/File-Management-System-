@@ -6,12 +6,41 @@ import FileManager from './apps/FileManager';
 import TextEditor from './apps/TextEditor';
 import RecycleBin from './apps/RecycleBin';
 import StorageMap from './apps/StorageMap';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Lock } from 'lucide-react';
 
 function App() {
+  const [booting, setBooting] = useState(true);
+  const [bootPhase, setBootPhase] = useState(0); // 0=black, 1=logo, 2=loading, 3=fade out
   const [windows, setWindows] = useState([]);
   const [activeWindowId, setActiveWindowId] = useState(null);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
+
+  // Boot sequence
+  useEffect(() => {
+    const timers = [];
+    timers.push(setTimeout(() => setBootPhase(1), 400));   // Show logo
+    timers.push(setTimeout(() => setBootPhase(2), 1200));  // Show loading
+    timers.push(setTimeout(() => setBootPhase(3), 3000));  // Start fade out
+    timers.push(setTimeout(() => setBooting(false), 3600)); // Remove boot screen
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const handleShutdown = () => {
+    // Close all windows and trigger boot screen again
+    setWindows([]);
+    setActiveWindowId(null);
+    setStartMenuOpen(false);
+    setBootPhase(3); // Start fade to black
+    setBooting(true);
+    setTimeout(() => {
+      setBootPhase(0); // Full black
+      setTimeout(() => setBootPhase(1), 400);   // Logo
+      setTimeout(() => setBootPhase(2), 1200);  // Loading
+      setTimeout(() => setBootPhase(3), 3000);  // Fade out
+      setTimeout(() => setBooting(false), 3600); // Desktop
+    }, 600);
+  };
 
   const openApp = (appId, initialProps = {}) => {
     const existingWindow = windows.find(w => w.appId === appId && appId !== 'editor'); // Allow multiple editors? Maybe not for now 
@@ -79,6 +108,71 @@ function App() {
     <div className="h-screen w-screen overflow-hidden bg-cover bg-center font-sans text-gray-900 select-none"
          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=2070&auto=format&fit=crop")' }}>
       
+      {/* Boot Splash Screen */}
+      <AnimatePresence>
+        {booting && (
+          <motion.div
+            key="boot"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: bootPhase === 3 ? 0 : 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center"
+          >
+            {/* Logo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: bootPhase >= 1 ? 1 : 0, scale: bootPhase >= 1 ? 1 : 0.5 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="flex flex-col items-center"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
+                <Lock size={40} className="text-white" />
+              </div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: bootPhase >= 1 ? 1 : 0, y: bootPhase >= 1 ? 0 : 10 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="text-4xl font-bold text-white tracking-widest"
+                style={{ fontFamily: "'Inter', 'SF Pro Display', system-ui, sans-serif" }}
+              >
+                DEADLOCK
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: bootPhase >= 1 ? 0.5 : 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="text-sm text-slate-400 mt-2 tracking-wider"
+              >
+                Virtual File System
+              </motion.p>
+              
+            </motion.div>
+
+            {/* Loading indicator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: bootPhase >= 2 ? 1 : 0 }}
+              transition={{ duration: 0.4 }}
+              className="mt-12 flex flex-col items-center"
+            >
+              {/* Spinner */}
+              <div className="w-6 h-6 border-2 border-slate-700 border-t-blue-400 rounded-full animate-spin"></div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: bootPhase >= 2 ? 1 : 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                className="text-xs text-slate-500 mt-4"
+              >
+                Starting up...
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Desktop openApp={openApp} />
 
       <AnimatePresence>
@@ -122,6 +216,7 @@ function App() {
         startMenuOpen={startMenuOpen}
         toggleStartMenu={() => setStartMenuOpen(!startMenuOpen)}
         openApp={openApp}
+        onShutdown={handleShutdown}
       />
     </div>
   );
